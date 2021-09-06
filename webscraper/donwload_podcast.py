@@ -24,10 +24,12 @@ if __name__ == "__main__":
     from argparse import ArgumentParser, RawTextHelpFormatter
     parser = ArgumentParser(description="""This script downloads audio files from https://newbooksnetwork.com/
 Example:
-    donwload_podcast.py https://newbooksnetwork.com/emilie-hafner-burton-improving-human-rights-open-agenda-2021 """, formatter_class=RawTextHelpFormatter)
-    parser.add_argument("url", type=str, help="url of the page")
+    run: python3 donwload_podcast.py 
+    then type: https://newbooksnetwork.com/emilie-hafner-burton-improving-human-rights-open-agenda-2021 """, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--url", type=str, help="url of the page")
     parser.add_argument("--out-dir", type=str, help="output folder of the audio", default=os.path.expandvars(f"/Users/$USER/Downloads/"))
     args = parser.parse_args()
+    if args.url is None: args.url = input("copy the webpage address here:")
 
     with webdriver.Chrome(options=chrome_options) as driver:
 
