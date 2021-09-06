@@ -4,7 +4,7 @@ from selenium import webdriver
 # the 2 lines below are for printing logging messages 
 import logging as log
 log.basicConfig(level=log.INFO)
-# the 2 lines below makes browser invisible
+# the 3 lines below makes browser invisible
 from selenium.webdriver.chrome.options import Options
 chrome_options = Options()
 chrome_options.add_argument("--headless")
@@ -29,9 +29,11 @@ Example:
     parser.add_argument("--url", type=str, help="url of the page")
     parser.add_argument("--out-dir", type=str, help="output folder of the audio", default=os.path.expandvars(f"/Users/$USER/Downloads/"))
     args = parser.parse_args()
-    if args.url is None: args.url = input("copy the webpage address here:")
+    
+    # this line asks user to input the webpage address
+    if args.url is None: args.url = input("input the webpage address here:")
 
-    with webdriver.Chrome(options=chrome_options) as driver:
+    with webdriver.Chrome(options=chrome_options) as driver: # open a browser 
 
         # open the page and find the link to embedded player
         log.info(f"opening webpage: {args.url}")
