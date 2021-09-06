@@ -9,6 +9,7 @@ from selenium.webdriver.chrome.options import Options
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 
+
 def download_audio(url=None, out_file=None):
     """ Downloads an auodio file from a url to a file. """
     file_ = requests.get(url)
@@ -16,8 +17,10 @@ def download_audio(url=None, out_file=None):
     with open(out_file, "wb") as f:
         f.write(file_.content)
 
+
 if __name__ == "__main__":
 
+    # parse argument from commandline
     from argparse import ArgumentParser, RawTextHelpFormatter
     parser = ArgumentParser(description="""This script downloads audio files from https://newbooksnetwork.com/
 Example:
@@ -28,17 +31,20 @@ Example:
 
     with webdriver.Chrome(options=chrome_options) as driver:
 
+        # open the page and find the link to embedded player
         log.info(f"opening webpage: {args.url}")
         driver.get(args.url)
         elem = driver.find_element_by_tag_name("iframe")
         player_url = elem.get_attribute("src")
 
+        # open the embedded player and find the link to the mp3
         log.info(f"redirecting to: {player_url}")
         driver.get(player_url)
         for elem in driver.find_elements_by_class_name("MenuBar__btn"):
             href = elem.get_attribute("href")
             if href and "mp3" in href:
-                audio_url = href
+                audio_url = href # this is the link to the mp3
 
+    # save mp3 to your pc
     file_name = args.url.strip("/").split("/")[-1]
     download_audio(url=audio_url, out_file=(f"{args.out_dir}/{file_name}.mp3"))
