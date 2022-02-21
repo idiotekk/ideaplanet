@@ -66,7 +66,7 @@ def read_frame(path, *, to_np=True, to_rgb=True, size=None):
     """
     frame = Image.open(str(path))
     if size is not None:
-        frame.resize(size)
+        frame = frame.resize(size)
     if to_rgb is True:
         frame = frame.convert("RGB")
     if to_np is True:

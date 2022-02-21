@@ -1,5 +1,7 @@
+from asyncio import start_unix_server
 import sys, os
 import pprint
+from tokenize import blank_re
 import numpy as np
 sys.path.insert(0, os.path.expandvars("$GITHUB/ideaplanet/0xgenerator/python"))
 pprint.pprint(sys.path)
@@ -12,15 +14,29 @@ from tqdm import tqdm
 from argparse import ArgumentParser
 log.basicConfig(level=log.DEBUG)
 
+class Piece:
+
+    arr: np.array
+    speed_x: float
+    speed_y: float
+    start_x: float
+    start_y: float
+
+    def __init__(self):
+        pass
+
 
 def gen_sakura_gif():
 
     #input_file = Path(os.path.expandvars("~/cloud/data/0xgenerator/inputs")) / "sakura.png"
-    input_dir = Path("/Users/zche/data/0xgenerator/test0/inputs/")
+    input_dir = Path("/Users/zche/data/0xgenerator/sakura_rain/inputs/")
     output_dir = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") 
 
-    fg_frame = io.read_frame(input_dir / "p4.png")
+    origin_size = 1200
+    output_size = (300, 300)
+    fg_frame = io.read_frame(input_dir / "p4.png", size=output_size)
     skr_frame = io.read_frame(input_dir / "sakura.png", to_np=False) # sakura frame
+    skr_frame.resize((100, 100))
 
     w, h = skr_frame.size
     nn = 4
@@ -36,45 +52,64 @@ def gen_sakura_gif():
             ))
             raw_pieces.append(raw_piece)
 
-    rescale = 0.2
-    piece_idx = 0
-    piece_size = [int(_ * rescale) for _ in raw_piece_size]
-    piece = raw_pieces[piece_idx].resize(piece_size) # piece to place on top of background rescaled
-    piece.save(str(output_dir / f"sakura_piece_rescaled.png"))
-    log.info(f"piece {piece_idx} rescaled by {rescale} to new size {piece_size}")
-    piece_arr = np.array(piece)
-    replace_ = is_same_color(piece_arr, get_bg_color(piece_arr))
-    piece_arr = where(
-        replace_,
-        frm.green(piece_size),
-        piece_arr) # replace background by green
 
-    speed_x = 0.1 # horizontal speed at each frame, how much of the frame size does the piece fly though
-    speed_y = 0.1 # vertical speed
-    output_size = fg_frame.shape[:2]
+    pieces = []
+    
+    for i in tqdm(range(100)):
+        rescale = (output_size[0] / origin_size)  
+        distance_factor = np.random.rand() 
+        rescale_idio =  0.3 + 0.7 * distance_factor
+        piece_idx = np.random.randint(0, len(raw_pieces) - 1)
+        piece_size = [int(_ * rescale * rescale_idio) for _ in raw_piece_size]
+        piece = raw_pieces[piece_idx].resize(piece_size) # piece to place on top of background rescaled
+        piece.save(str(output_dir / f"sakura_piece_rescaled.png"))
+        #log.info(f"piece {piece_idx} rescaled by {rescale} to new size {piece_size}")
+        piece_arr = np.array(piece)
+        replace_ = is_same_color(piece_arr, get_bg_color(piece_arr))
+        piece_arr = where(
+            replace_,
+            frm.yellow(piece_size),
+            piece_arr) # replace background by green
+        
+        p = Piece()
+        p.arr = piece_arr
+        p.speed_x = 1 + np.random.rand() *  distance_factor # horizontal speed at each frame, how much of the frame does the p fly for the whole time
+        p.speed_y = -(1+np.random.rand()) / 2 * p.speed_x 
+        p.start_x = np.random.rand()
+        p.start_y = np.random.rand()
+
+        if i < 10:
+            io.np_to_im(p.arr).save(str(output_dir / f"test_{i}.png"))
+        pieces.append(p)
+
     out_w, out_h = output_size
-    n_frames = 10
+    n_frames = 100
     output_frames = []
 
-    for t in range(n_frames):
-        new_bg = frm.green(output_size)
-        top_left = int(speed_x * t * out_w), int(speed_y * t * out_h)
-        new_bg[
-            top_left[0]: top_left[0] + piece_size[0],
-            top_left[1]: top_left[1] + piece_size[1],
-            :] = piece_arr
-        new_arr = frm.replace_background_by_non_background(
-            fg_frame, new_bg
+    blank_bg = frm.yellow(output_size)
+    for t in tqdm(range(n_frames)):
+        new_bg = np.array(blank_bg)
+        for p in pieces:
+            loc = (
+                int((p.speed_x / n_frames * t + p.start_x) * out_w), 
+                int((p.speed_y / n_frames * t + p.start_y) * out_h)
+            )
+            new_bg = frm.paste(p.arr, new_bg, loc=loc, bg_color1=frm.YELLOW, bg_color2=frm.YELLOW)
+        arr = frm.replace_background_by_non_background(
+            fg_frame, new_bg,
+            bg_color1=get_bg_color(fg_frame),
+            bg_color2=frm.YELLOW,
         )
-        output_frames.append(
-            io.np_to_im(new_arr)
-        )
+        output_frames.append(arr)
+    
+    for i, arr in tqdm(enumerate(output_frames)):
+        output_frames[i] =  io.np_to_im(arr)
 
     output_file = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") / "sakura.gif"
     io.compile_gif(
         output_frames,
         output_file=output_file,
-        total_time=1.0,
+        total_time=5.0,
     )
     
 
