@@ -55,7 +55,7 @@ def gen_sakura_gif(file_name):
 
     pieces = []
     
-    base_speed = 3
+    base_speed = 3.5
 
     n_pieces = 100
     for i in tqdm(range(100)):
@@ -88,7 +88,7 @@ def gen_sakura_gif(file_name):
         pieces.append(p)
 
     out_w, out_h = output_size
-    n_frames = 80
+    n_frames = 100
     output_frames = []
 
     blank_bg = frm.yellow(output_size)
@@ -110,11 +110,11 @@ def gen_sakura_gif(file_name):
     for i, arr in tqdm(enumerate(output_frames)):
         output_frames[i] =  io.np_to_im(arr)
 
-    output_file = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") / f"sakura_{file_name}.gif"
+    output_file = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") / f"sakura_{file_name.split('.')[0]}.gif"
     io.compile_gif(
         output_frames,
         output_file=output_file,
-        total_time=5.0,
+        total_time=6.0,
     )
     
 
