@@ -61,11 +61,14 @@ def read_gif(path, *, samples, size, rescale=1.0, to_np=True, to_rgb=True):
     return frames
 
     
-def read_frame(path, *, to_np=True, to_rgb=True):
+def read_frame(path, *, to_np=True, to_rgb=True, size=None):
     """ Read a single frame from file (jpeg, png, etc.).
     """
     frame = Image.open(str(path))
+    if size is not None:
+        frame.resize(size)
     if to_rgb is True:
         frame = frame.convert("RGB")
     if to_np is True:
         frame = np.array(frame)
+    return frame

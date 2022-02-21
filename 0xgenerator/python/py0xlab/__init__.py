@@ -14,6 +14,6 @@ __all__ = [
 ]
 
 FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
-log.basicConfig(format=FORMAT)
+log.basicConfig(format=FORMAT, level=log.DEBUG)
 
 base_parser = lambda: ArgumentParser()

@@ -34,8 +34,10 @@ def get_bg_color(arr: np.array):
 def is_same_color(arr, color, tol=10):
     """ Get a matrix of bools indicating each pixel has the same color as `color`.
     """
-    return np.max(np.abs(arr - np.array(color)), axis=2) <  10
-
+    color_diff = arr - np.array(color)
+    max_color_diff = np.max(np.abs(color_diff), axis=2)
+    mask = max_color_diff < tol
+    return mask
 
 
 def uniform(size, color):
@@ -68,7 +70,7 @@ def where(mask, data1, data2):
     """
     last_dim    = data1.shape[-1]
     mask        = np.stack([mask] * last_dim, axis=last_dim - 1)
-    new_data    = np.where(mask, data2, data1)
+    new_data    = np.where(mask, data1, data2)
     return new_data
 
 
@@ -86,9 +88,9 @@ def replace_background_by_non_background(arr1, arr2):
     """
     bg_color1   = arr1[5, 5, :]
     bg_color2   = arr2[3, 3, :]
-    is_bg1      = (np.max(np.abs(arr1 - np.array(bg_color1)), axis=2) <  10)
-    is_bg2      = (np.max(np.abs(arr2 - np.array(bg_color2)), axis=2) >= 30)
+    log.info({"bg1": bg_color1, "bg2": bg_color2})
+    is_bg1      = is_same_color(arr1, bg_color1)
+    is_bg2      = is_same_color(arr2, bg_color2)
     replace     = np.logical_and(is_bg1, np.logical_not(is_bg2))
-    replace     = np.stack([replace] * 3, axis=2)
-    new_arr    = np.where(replace, arr2, arr1)
+    new_arr     = where(replace, arr2, arr1)
     return new_arr
