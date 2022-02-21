@@ -52,7 +52,6 @@ def read_gif(path, *, samples, size, rescale=1.0):
 def replace_yellow_by_non_white(data1, data2):
     """ Replace the yellow in im1 by im2 if im2 is not white.
     """
-    #yellow  = (255, 215, 0)
     yellow  = data1[5, 5, :]
     white   = (255, 255, 255)
     is_yellow   = (np.max(np.abs(data1 - np.array(yellow)), axis=2) <  10)
@@ -76,7 +75,7 @@ def main(fg_file, input_dir, output_file):
         im_data2 = np.array(bg_frame)
         new_data = replace_yellow_by_non_white(im_data1, im_data2)
         frame = Image.fromarray(new_data.astype('uint8'), "RGB")
-        frame = frame.filter(ImageFilter.SMOOTH)
+        frame = frame.filter(ImageFilter.SMOOTH) # smooth the frame
         frames.append(frame)
 
     # set duration of each frame according total time and number of frames
@@ -93,9 +92,7 @@ if __name__ == "__main__":
     input_dir = f"{root_dir}/inputs"
     output_dir = f"{root_dir}/output"
     Path(output_dir).mkdir(parents=True, exist_ok=True)
-    #fg_file = f"{input_dir}/p1.jpg"
 
-    #file_name = "p4" # file name without suffix
     file_name = parser.parse_args().file_name
     fg_file = f"{input_dir}/{file_name}.png"
     main(fg_file, input_dir, f"{output_dir}/{file_name}_.gif")
