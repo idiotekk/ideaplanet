@@ -86,6 +86,15 @@ def overlay(arr1, arr2):
     is_bg_color1 = is_same_color(arr1, bg_color1)
     return where(is_bg_color1, arr2, arr1)
 
+    
+def rotate(arr, k=None):
+    """ Only support multiple of 90 degrees.
+    """
+    assert arr.shape[0] == arr.shape[1], f"only support square img, got shape {arr.shape}"
+    if k is None:
+        k = np.random.randint(0, 4)
+    return np.rot90(arr, k, axes=(0, 1))
+
 
 def replace_background_by_non_background(arr1, arr2, bg_color1=None, bg_color2=None):
     """ Replace the backgroud in arr1 by non-background in arr2.

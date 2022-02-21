@@ -26,15 +26,15 @@ class Piece:
         pass
 
 
-def gen_sakura_gif():
+def gen_sakura_gif(file_name):
 
     #input_file = Path(os.path.expandvars("~/cloud/data/0xgenerator/inputs")) / "sakura.png"
     input_dir = Path("/Users/zche/data/0xgenerator/sakura_rain/inputs/")
     output_dir = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") 
 
     origin_size = 1200
-    output_size = (300, 300)
-    fg_frame = io.read_frame(input_dir / "p4.png", size=output_size)
+    output_size = (400, 400)
+    fg_frame = io.read_frame(input_dir / f"{file_name}", size=output_size)
     skr_frame = io.read_frame(input_dir / "sakura.png", to_np=False) # sakura frame
     skr_frame.resize((100, 100))
 
@@ -55,14 +55,18 @@ def gen_sakura_gif():
 
     pieces = []
     
+    base_speed = 3
+
+    n_pieces = 100
     for i in tqdm(range(100)):
         rescale = (output_size[0] / origin_size)  
-        distance_factor = np.random.rand() 
-        rescale_idio =  0.3 + 0.7 * distance_factor
+        #distance_factor = np.random.rand() 
+        distance_factor = i * 1.0 / n_pieces
+        rescale_idio =  0.2 + 0.8 * distance_factor
         piece_idx = np.random.randint(0, len(raw_pieces) - 1)
         piece_size = [int(_ * rescale * rescale_idio) for _ in raw_piece_size]
         piece = raw_pieces[piece_idx].resize(piece_size) # piece to place on top of background rescaled
-        piece.save(str(output_dir / f"sakura_piece_rescaled.png"))
+        #piece.save(str(output_dir / f"sakura_piece_rescaled.png")) # for debug
         #log.info(f"piece {piece_idx} rescaled by {rescale} to new size {piece_size}")
         piece_arr = np.array(piece)
         replace_ = is_same_color(piece_arr, get_bg_color(piece_arr))
@@ -70,10 +74,11 @@ def gen_sakura_gif():
             replace_,
             frm.yellow(piece_size),
             piece_arr) # replace background by green
+        piece_arr = frm.rotate(piece_arr, k=np.random.randint(0, 4))
         
         p = Piece()
         p.arr = piece_arr
-        p.speed_x = 1 + np.random.rand() *  distance_factor # horizontal speed at each frame, how much of the frame does the p fly for the whole time
+        p.speed_x = base_speed * (0.1 + 0.9*distance_factor) # horizontal speed at each frame, how much of the frame does the p fly for the whole time
         p.speed_y = -(1+np.random.rand()) / 2 * p.speed_x 
         p.start_x = np.random.rand()
         p.start_y = np.random.rand()
@@ -83,7 +88,7 @@ def gen_sakura_gif():
         pieces.append(p)
 
     out_w, out_h = output_size
-    n_frames = 100
+    n_frames = 80
     output_frames = []
 
     blank_bg = frm.yellow(output_size)
@@ -105,7 +110,7 @@ def gen_sakura_gif():
     for i, arr in tqdm(enumerate(output_frames)):
         output_frames[i] =  io.np_to_im(arr)
 
-    output_file = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") / "sakura.gif"
+    output_file = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") / f"sakura_{file_name}.gif"
     io.compile_gif(
         output_frames,
         output_file=output_file,
@@ -119,4 +124,4 @@ parser.add_argument("file_name", type=str)
     
 if __name__ == "__main__":
 
-    gen_sakura_gif()
+    gen_sakura_gif(file_name=parser.parse_args().file_name)
