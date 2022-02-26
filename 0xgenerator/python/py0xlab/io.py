@@ -2,9 +2,9 @@ from py0xlab import *
 import numpy as np
 
 
-def np_to_im(arr):
+def np_to_im(arr, mode="RGB"):
     
-    return Image.fromarray(arr.astype('uint8'), "RGB")
+    return Image.fromarray(arr.astype('uint8'), mode)
 
 
 def compile_gif(frames, *, output_file, total_time):
