@@ -3,6 +3,7 @@ import sys, os
 import pprint
 from tokenize import blank_re
 import numpy as np
+from PIL import ImageFilter
 sys.path.insert(0, os.path.expandvars("$GITHUB/ideaplanet/0xgenerator/python"))
 pprint.pprint(sys.path)
 from py0xlab import *
@@ -55,9 +56,9 @@ def gen_sakura_gif(file_name):
 
     pieces = []
     
-    base_speed = 3.5
+    base_speed = 4
 
-    n_pieces = 100
+    n_pieces = 150
     for i in tqdm(range(100)):
         rescale = (output_size[0] / origin_size)  
         #distance_factor = np.random.rand() 
@@ -83,12 +84,12 @@ def gen_sakura_gif(file_name):
         p.start_x = np.random.rand()
         p.start_y = np.random.rand()
 
-        if i < 10:
-            io.np_to_im(p.arr).save(str(output_dir / f"test_{i}.png"))
+        #if i < 10: # for debug
+            #io.np_to_im(p.arr).save(str(output_dir / f"test_{i}.png"))
         pieces.append(p)
 
     out_w, out_h = output_size
-    n_frames = 100
+    n_frames = 150
     output_frames = []
 
     blank_bg = frm.yellow(output_size)
@@ -108,7 +109,9 @@ def gen_sakura_gif(file_name):
         output_frames.append(arr)
     
     for i, arr in tqdm(enumerate(output_frames)):
-        output_frames[i] =  io.np_to_im(arr)
+        frame = io.np_to_im(arr, "RGB")
+        #frame = frame.filter(ImageFilter.SMOOTH)
+        output_frames[i] = frame
 
     output_file = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") / f"sakura_{file_name.split('.')[0]}.gif"
     io.compile_gif(
