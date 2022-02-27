@@ -13,6 +13,7 @@ from pathlib import Path
 from PIL import ImageEnhance, ImageFilter
 from tqdm import tqdm
 from argparse import ArgumentParser
+from math import pi
 log.basicConfig(level=log.DEBUG)
 np.set_printoptions(edgeitems=8, linewidth=100000)
 
@@ -21,11 +22,36 @@ output_dir = Path("/Users/zche/cloud/data/0xgenerator/polkadot/outputs/")
 
 def get_distance(xx, yy, xx_c, yy_c, method="l2"):
 
+    dx = xx - xx_c 
+    dy = yy - yy_c
+    r = np.sqrt(dx ** 2 + dy ** 2)
+    """
+    _theta = lambda: np.where(
+        dx > 0,
+        np.arcsin(dx / np.maximum(r,  1e-6)) - pi / 2,
+        np.arcsin(dx / np.maximum(r,  1e-6)) - pi / 2 * 3,
+    )
+    """
     if method == "l2":
-        distance = np.sqrt((xx - xx_c) ** 2 + (yy - yy_c) ** 2)
+        distance = r
         return distance
     if method == "l1":
         distance = np.abs(xx - xx_c) + np.abs(yy - yy_c)
+        return distance
+    elif method.startswith("l"):
+        p = float(method[1:])
+        distance = np.power(np.abs(xx - xx_c) ** p + np.abs(yy - yy_c) ** p, 1 / p)
+        return distance
+    elif method == "heart":
+        p = 1.5
+        distance = np.where(
+            dy < 0,
+            r / np.abs( dy ),
+            np.power(np.abs(xx - xx_c) ** p + np.abs(yy - yy_c) ** p, 1 / p)
+        )
+        return distance
+    elif method == "x":
+        distance = np.abs(xx - xx_c)
         return distance
     else:
         raise ValueError(f"unsupported : {method}")
@@ -34,11 +60,11 @@ def gen_polkadot(file_name):
 
     input_frame = io.read_frame(input_dir / f"{file_name}", to_np=False) 
     #input_frame = input_frame.filter(ImageFilter.SMOOTH)
-    input_frame = input_frame.quantize(kmeans=20)
+    #input_frame = input_frame.quantize(kmeans=20)
     bw_frame = input_frame.convert("L")
     bw_arr = np.array(bw_frame)
     log.info(f"image size : {input_frame.size}")
-    grid_size = 15
+    grid_size = 12
 
     ## test
     #bw_arr = np.random.randint(0, 255, size=(10, 10))
@@ -46,7 +72,7 @@ def gen_polkadot(file_name):
 
     input_w, input_h, *_ = bw_arr.shape
     xx, yy = frm.get_coords(bw_arr.shape)
-    log.info(f"xx : {xx}, yy: {yy}")
+    #log.info(f"xx : {xx}, yy: {yy}")
     margin0 = 0.01
     margin1 = 0.01
     grid_w, grid_h = 2, 2
@@ -73,33 +99,42 @@ def gen_polkadot(file_name):
         ("yellow", (0, 187, 183)),
         ("white", "pink"),
         ("white", "black"),
-        ("black", (255, 223, 0))
+        ("black", (255, 223, 100))
     )
     distance_methods = (
-        "l2",
-        "l2",
         "l1",
-        "l1"
+        "l2",
+        "x",
+        "l0.5"
     )
     radius_scale = (
-        1.0,
-        0.8,
-        1.0,
+        1.2,
+        0.9,
+        0.9,
         1.0
     )
     radius_floor = (
-        0.5,
-        0.0,
-        0.0,
+        0.3,
+        0.2,
+        0.3,
         0.3
     )
+    radius_ceil = (
+        10,
+        10,
+        0.7,
+        10,
+    )
+
     for idx, (i, j) in enumerate(idx_seq):
         #output_arr = np.where(rgb_mask, frm.get_rgb("pink"), frm.get_rgb("white"))
         #output_arr = np.where(rgb_mask, frm.get_rgb("white"), frm.get_rgb("yellow"))
-        radius = grid_size // 2 * np.maximum(
+        radius = grid_size // 2 * np.minimum(
+            np.maximum(
             (
             ( 1 - color_c / 256 ) * 0.8 + 0.2
-        ) * radius_scale[idx], radius_floor[idx]) # rescale radius, then floor
+        ) * radius_scale[idx], radius_floor[idx]),
+            radius_ceil[idx])# rescale radius, then floor
         distance = get_distance(xx, yy, xx_c, yy_c, method=distance_methods[idx])
         #log.info(f"distance: {distance}")
         mask = ( distance < radius )
@@ -122,7 +157,7 @@ def gen_polkadot(file_name):
             int(j * (input_w*(1+2*margin1)) + input_w * margin1 + input_w * margin0)
         ))
 
-    output_file = Path(output_dir) / f"{file_name.split('.')[0]}_bw.png"
+    output_file = Path(output_dir) / f"{file_name.split('.')[0]}_heart.png"
     output_file.parent.mkdir(parents=True, exist_ok=True)
     io.save_im(output_im, output_file)
     output_im.show()
