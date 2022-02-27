@@ -57,9 +57,9 @@ def gen_sakura_gif(file_name):
 
     pieces = []
     
-    base_speed = 3
+    base_speed = 3.2
 
-    n_pieces = 50 
+    n_pieces = 101
     for i in tqdm(range(n_pieces)):
         rescale = (output_size[0] / origin_size)  
         #distance_factor = np.random.rand() 
@@ -80,10 +80,13 @@ def gen_sakura_gif(file_name):
         
         p = Piece()
         p.arr = piece_arr
-        p.speed_x = base_speed * (0.1 + 0.9*distance_factor) # horizontal speed at each frame, how much of the frame does the p fly for the whole time
-        p.speed_y = -(1+np.random.rand()) / 2 * p.speed_x 
-        p.start_x = np.random.rand()
-        p.start_y = np.random.rand()
+        p.speed_x = base_speed * (0.1 + 0.5 * distance_factor + 0.5*np.random.rand()) # horizontal speed at each frame, how much of the frame does the p fly for the whole time
+        #p.speed_y = -(1+np.random.rand()) / 2 * p.speed_x 
+        p.speed_y = -(1) / 2 * p.speed_x 
+        #p.start_x = np.random.rand()
+        #p.start_y = np.random.rand()
+        p.start_x = np.mod(i * 19, n_pieces) / n_pieces
+        p.start_y = np.mod(i * 13, n_pieces) / n_pieces
 
         #if i < 10: # for debug
             #io.np_to_im(p.arr).save(str(output_dir / f"test_{i}.png"))
@@ -94,7 +97,9 @@ def gen_sakura_gif(file_name):
     output_frames = []
 
     blank_bg = frm.yellow(output_size)
-    for t in tqdm(range(n_frames)):
+    for t in tqdm(range(n_frames + 100)):
+        if t < 100:
+            continue
         new_bg = np.array(blank_bg)
         for p in pieces:
             loc = (
@@ -111,8 +116,9 @@ def gen_sakura_gif(file_name):
     
     for i, arr in tqdm(enumerate(output_frames)):
         frame = io.np_to_im(arr, "RGB")
-        #frame = frame.filter(ImageFilter.SMOOTH)
-        output_frames[i] = frame
+        #frame = frame.convert("YCbCr")
+        #output_frames[i] = frame
+        output_frames[i] = frame.quantize(dither=Image.NONE)
 
     #output_file = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") / f"sakura_{file_name.split('.')[0]}.gif"
     output_file = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") / f"cat_{file_name.split('.')[0]}.gif"

@@ -63,7 +63,7 @@ def gen_sakura_gif(file_name):
         rescale = (output_size[0] / origin_size)  
         #distance_factor = np.random.rand() 
         distance_factor = i * 1.0 / n_pieces
-        rescale_idio =  0.2 + 0.8 * distance_factor
+        rescale_idio =  (0.2 + 0.8 * distance_factor)*1.4
         piece_idx = np.random.randint(0, len(raw_pieces) - 1)
         piece_size = [int(_ * rescale * rescale_idio) for _ in raw_piece_size]
         piece = raw_pieces[piece_idx].resize(piece_size) # piece to place on top of background rescaled
@@ -111,13 +111,15 @@ def gen_sakura_gif(file_name):
     for i, arr in tqdm(enumerate(output_frames)):
         frame = io.np_to_im(arr, "RGB")
         #frame = frame.filter(ImageFilter.SMOOTH)
-        output_frames[i] = frame
+        #output_frames[i] = frame
+        #output_frames[i] = frame.quantize(dither=Image.NONE)
+        output_frames[i] = frame.quantize(dither=Image.FLOYDSTEINBERG)
 
     output_file = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") / f"sakura_{file_name.split('.')[0]}.gif"
     io.compile_gif(
         output_frames,
         output_file=output_file,
-        total_time=6.0,
+        total_time=7.0,
     )
     
 
