@@ -25,20 +25,44 @@ def crop(arr, crop_limits=None, top_left=None, size=None):
         raise ValueError("either crop_limits or (top_left, size) is required")
 
 
-def round_corner(arr, margin=0.05, bg_color=(255, 255, 255)):
-    """
-    margin: percentage of size of image as margin.
-    """
-    if isinstance(margin, float):
-        assert 0 <= margin <= 1/2
-        margin_w = margin * arr.shape[0]
-        margin_h = margin * arr.shape[1]
-    else:
-        assert len(margin) == 2, "margin must be one or two numbers"
-        margin_w = margin[0] * arr.shape[0]
-        margin_h = margin[1] * arr.shape[1]
-    radius = min(margin_w, margin_h)
-    return radius
+def get_coords(size):
+
+    assert len(size) >= 2, "input must be a matrix or higher rank array."
+    h, w = size[:2]
+    x_coords = np.array([[i] * w for i in range(h)])
+    y_coords = np.array([[j for j in range(w)]] * h)
+    return x_coords, y_coords
+
+
+def round_corner(arr, radius, bg_color):
+    assert 0 <= radius < 0.5
+    h, w, *_ = arr.shape
+    x_coords, y_coords = get_coords(arr.shape)
+    radius = min(h, w) * radius # convert radius to pixels
+    inside_mask = np.array([[False] * w] * h)
+    inside_mask = np.logical_or.reduce(
+        (inside_mask, 
+         np.logical_and(x_coords >= 0 + radius, x_coords <= h - radius - 1),
+         np.logical_and(y_coords >= 0 + radius, y_coords <= w - radius - 1),
+         np.logical_or.reduce(
+                [
+                    ((x_coords - xx) ** 2+(y_coords - yy) ** 2) <= radius ** 2 for xx, yy in (
+                        (radius, radius),
+                        (radius, w - radius),
+                        (h - radius, radius),
+                        (h - radius, w - radius)
+                    )
+                ]
+         )))
+
+    inside_mask = np.stack([inside_mask]*3, axis=2)
+    bg = np.array([[bg_color]*w] * h)
+    res = np.where(inside_mask,
+                   arr,
+                   bg
+                   )
+    return res
+
 
 
 def get_bg_color(arr: np.array):
@@ -80,6 +104,24 @@ def white(size):
     """
     return uniform(size, WHITE)
 
+BLACK = np.array([0, 0, 0])
+
+
+def get_rgb(name, size=None):
+    
+    color = {
+        #"pink": (230, 0, 122),
+        "pink": (255, 0, 130),
+        "white": (255, 255, 255),
+        "black": (0, 0, 0),
+        "green": (100, 255, 0),
+        "yellow": (255, 215, 0),
+    }.get(name)
+    if size is None:
+        return color
+    else:
+        return uniform(size, color)
+        
 
 def where(mask, data1, data2):
     """ Replace the yellow in im1 by im2 if im2 is not white.
