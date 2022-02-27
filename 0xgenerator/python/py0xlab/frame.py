@@ -1,4 +1,3 @@
-from graphlib import CycleError
 from py0xlab import *
 import numpy as np
 
@@ -25,7 +24,23 @@ def crop(arr, crop_limits=None, top_left=None, size=None):
     else:
         raise ValueError("either crop_limits or (top_left, size) is required")
 
-    
+
+def round_corner(arr, margin=0.05, bg_color=(255, 255, 255)):
+    """
+    margin: percentage of size of image as margin.
+    """
+    if isinstance(margin, float):
+        assert 0 <= margin <= 1/2
+        margin_w = margin * arr.shape[0]
+        margin_h = margin * arr.shape[1]
+    else:
+        assert len(margin) == 2, "margin must be one or two numbers"
+        margin_w = margin[0] * arr.shape[0]
+        margin_h = margin[1] * arr.shape[1]
+    radius = min(margin_w, margin_h)
+    return radius
+
+
 def get_bg_color(arr: np.array):
     
     assert arr.shape[0] > 2 and arr.shape[1] > 2, f"img too small or narrow: {arr.shape}"

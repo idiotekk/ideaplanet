@@ -6,6 +6,12 @@ def np_to_im(arr, mode="RGB"):
     
     return Image.fromarray(arr.astype('uint8'), mode)
 
+def save_im(im, output_file):
+
+    Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+    im.save(output_file)
+    log.info(f"image saved to: {output_file}")
+
 
 def compile_gif(frames, *, output_file, total_time):
     """ Compile frame into gif, same as output_file.
