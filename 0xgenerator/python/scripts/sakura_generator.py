@@ -112,8 +112,9 @@ def gen_sakura_gif(file_name):
         frame = io.np_to_im(arr, "RGB")
         #frame = frame.filter(ImageFilter.SMOOTH)
         #output_frames[i] = frame
-        #output_frames[i] = frame.quantize(dither=Image.NONE)
-        output_frames[i] = frame.quantize(dither=Image.FLOYDSTEINBERG)
+        #output_frames[i] = frame #.quantize()#dither=Image.NONE)
+        output_frames[i] = frame.quantize(kmeans=3)#dither=Image.NONE)
+        #output_frames[i] = frame.quantize(dither=Image.FLOYDSTEINBERG)
 
     output_file = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") / f"sakura_{file_name.split('.')[0]}.gif"
     io.compile_gif(
