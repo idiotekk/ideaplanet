@@ -16,8 +16,8 @@ from argparse import ArgumentParser
 log.basicConfig(level=log.DEBUG)
 np.set_printoptions(edgeitems=8, linewidth=100000)
 
-input_dir = Path("/Users/zche/cloud/data/0xgenerator/vintage/inputs/")
-output_dir = Path("/Users/zche/cloud/data/0xgenerator/vintage/outputs/") 
+input_dir = Path("/Users/zche/cloud/data/0xgenerator/polkadot/inputs/")
+output_dir = Path("/Users/zche/cloud/data/0xgenerator/polkadot/outputs/") 
 
 def get_distance(xx, yy, xx_c, yy_c, method="l2"):
 
@@ -33,7 +33,8 @@ def get_distance(xx, yy, xx_c, yy_c, method="l2"):
 def gen_vintage(file_name):
 
     input_frame = io.read_frame(input_dir / f"{file_name}", to_np=False) 
-    input_frame = input_frame.filter(ImageFilter.SMOOTH)
+    #input_frame = input_frame.filter(ImageFilter.SMOOTH)
+    input_frame = input_frame.quantize(kmeans=20)
     bw_frame = input_frame.convert("L")
     bw_arr = np.array(bw_frame)
     log.info(f"image size : {input_frame.size}")
