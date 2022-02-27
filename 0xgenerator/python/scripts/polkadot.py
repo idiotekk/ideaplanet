@@ -30,7 +30,7 @@ def get_distance(xx, yy, xx_c, yy_c, method="l2"):
     else:
         raise ValueError(f"unsupported : {method}")
     
-def gen_vintage(file_name):
+def gen_polkadot(file_name):
 
     input_frame = io.read_frame(input_dir / f"{file_name}", to_np=False) 
     #input_frame = input_frame.filter(ImageFilter.SMOOTH)
@@ -133,4 +133,4 @@ parser.add_argument("file_name", type=str)
     
 if __name__ == "__main__":
 
-    gen_vintage(file_name=parser.parse_args().file_name)
+    gen_polkadot(file_name=parser.parse_args().file_name)
