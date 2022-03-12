@@ -48,8 +48,8 @@ def bg_switch(file_name):
     is_bg_color = frm.is_same_color(input_arr, color=input_bg_color, tol=3)
     is_black = (
         np.logical_or.reduce((
-            frm.is_same_color(input_arr, color=frm.BLACK, tol=30),
-            frm.is_same_color(input_arr, color=frm.WHITE, tol=150),
+            frm.is_same_color(input_arr, color=frm.BLACK, tol=20),
+            frm.is_same_color(input_arr, color=frm.WHITE, tol=50),
             input_arr[:,:,2] > input_arr[:,:,1], # blue-ish
             )
         )
@@ -82,10 +82,11 @@ def bg_switch(file_name):
                 j_new = j + dj
                 if i_new < 0 or i_new >= input_h or j_new < 0 or j_new >= input_w:
                     continue
-                if is_black[i_new, j_new] == False or np.logical_and(
-                    input_arr[i_new,j_new,2] < input_arr[i_new,j_new,1] < input_arr[i_new,j_new,0],
-                    j > input_w * 0.6
-                ): # yellow-ish
+                #if is_black[i_new, j_new] == False or np.logical_and(
+                    #input_arr[i_new,j_new,2] < input_arr[i_new,j_new,1] < input_arr[i_new,j_new,0],
+                    #j > input_w * 0.6
+                #): # yellow-ish
+                if is_black[i_new, j_new] == False:
                     flag[i_new, j_new] = True
                     if is_bg_color[i_new, j_new] == False:
                         is_boundary[i_new, j_new] = True
@@ -117,6 +118,13 @@ def bg_switch(file_name):
         pd.DataFrame(flag.astype(float)).to_csv(str(output_dir/"flag.csv"))
         #new_arr = frm.round_corner(new_arr, 0.02, bg_color=canvas_color)
         new_im = io.np_to_im(new_arr, "RGB")
+
+        new_im_tmp = new_im.filter(ImageFilter.SMOOTH)
+        new_im_tmp = new_im.copy()
+        output_file = Path(output_dir) / f"{file_name.split('.')[0]}/{idx}.png"
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        io.save_im(new_im_tmp, output_file)
+
         output_im.paste(new_im, (
             int(i * (input_h*(1+2*margin1)) + input_h * margin1 + input_h * margin0), 
             int(j * (input_w*(1+2*margin1)) + input_w * margin1 + input_w * margin0)
