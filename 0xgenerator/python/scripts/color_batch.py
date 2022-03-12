@@ -20,8 +20,8 @@ log.basicConfig(level=log.DEBUG)
 import cv2
 import matplotlib.pyplot as plt
 
-input_dir = Path("/Users/zche/cloud/data/0xgenerator/andy/inputs/")
-output_dir = Path("/Users/zche/cloud/data/0xgenerator/andy/outputs/") 
+input_dir = Path("/Users/zche/cloud/data/0xgenerator/color_batch/inputs/")
+output_dir = Path("/Users/zche/cloud/data/0xgenerator/color_batch/outputs/") 
 
     
 def main(file_name):

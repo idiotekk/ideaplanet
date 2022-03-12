@@ -26,6 +26,21 @@ class Piece:
     def __init__(self):
         pass
 
+def replace_non_background_by_non_background(arr1, arr2, bg_color1=None, bg_color2=None):
+    """ Replace the backgroud in arr1 by non-background in arr2.
+    """
+    assert arr1.shape == arr2.shape, f"inputs shape mismatch: {arr1.shape} vs {arr2.shape}"
+    if bg_color1 is None:
+        bg_color1   = arr1[5, 5, :]
+    if bg_color2 is None:
+        bg_color2   = arr2[3, 3, :]
+    is_bg1      = is_same_color(arr1, bg_color1)
+    is_bg2      = is_same_color(arr2, bg_color2)
+    #replace     = np.logical_and(is_bg1, np.logical_not(is_bg2))
+    arr2_a      = where(is_bg2, np.array([135, 206, 235]), arr2)
+    replace     = np.logical_not(is_bg1)
+    new_arr     = where(replace, arr2_a, arr1)
+    return new_arr
 
 def gen_sakura_gif(file_name):
 
@@ -34,9 +49,13 @@ def gen_sakura_gif(file_name):
     output_dir = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") 
 
     origin_size = 1200
-    output_size = (400, 400)
+    output_size = (600, 600)
     fg_frame = io.read_frame(input_dir / f"{file_name}", size=output_size)
-    skr_frame = io.read_frame(input_dir / "sakura.png", to_np=False) # sakura frame
+    #skr_frame = io.read_frame(input_dir / "sakura.png", to_np=True) # sakura frame
+    skr_arr = io.read_frame(input_dir / "sakura.png", to_np=True) # sakura frame
+    bg_color2   = skr_arr[3, 3, :]
+    is_bg2      = is_same_color(skr_arr, bg_color2, tol=60)
+    skr_frame   = io.np_to_im( where(is_bg2, np.array([135, 206, 235]), skr_arr))
     skr_frame.resize((100, 100))
 
     w, h = skr_frame.size
@@ -56,13 +75,13 @@ def gen_sakura_gif(file_name):
 
     pieces = []
     
-    base_speed = 3
+    base_speed = 2
 
-    n_pieces = 100
+    n_pieces = 150
     for i in tqdm(range(n_pieces)):
         rescale = (output_size[0] / origin_size)  
         #distance_factor = np.random.rand() 
-        distance_factor = 1 - i * 1.0 / n_pieces
+        distance_factor = 1 - (i * 1.0 / n_pieces)
         rescale_idio =  (0.2 + 0.8 * distance_factor)
         piece_idx = np.random.randint(0, len(raw_pieces) - 1)
         piece_size = [int(_ * rescale * rescale_idio) for _ in raw_piece_size]
@@ -101,7 +120,7 @@ def gen_sakura_gif(file_name):
                 int((p.speed_y / n_frames * t + p.start_y) * out_h)
             )
             new_bg = frm.paste(p.arr, new_bg, loc=loc, bg_color1=frm.YELLOW, bg_color2=frm.YELLOW)
-        arr = frm.replace_background_by_non_background(
+        arr = replace_non_background_by_non_background(
             fg_frame, new_bg,
             bg_color1=get_bg_color(fg_frame),
             bg_color2=frm.YELLOW,
@@ -116,7 +135,7 @@ def gen_sakura_gif(file_name):
         output_frames[i] = frame.quantize(kmeans=3)#dither=Image.NONE)
         #output_frames[i] = frame.quantize(dither=Image.FLOYDSTEINBERG)
 
-    output_file = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") / f"sakura_{file_name.split('.')[0]}.gif"
+    output_file = Path("/Users/zche/data/0xgenerator/sakura_rain/ouputs/") / f"reverse_sakura_{file_name.split('.')[0]}.gif"
     io.compile_gif(
         output_frames,
         output_file=output_file,
