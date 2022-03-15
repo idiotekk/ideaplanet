@@ -49,30 +49,30 @@ output_dir = Path("/Users/zche/data/0xgenerator/space_travel/outputs/")
 
 def space_travel():
 
-    n_stars = 1000
+    n_stars = 2000
     proj_z = 10
 
     n_frames = 100
-    one_over_n_cycles = 3
-    n_cycles = 1 / one_over_n_cycles
     total_time = 10 # seconds
+    n_replicates = 5
+    n_cycles = 1
     output_size = np.array([600]*2)
     max_visible_distance = 600
-    box_depth = max_visible_distance * 2
-    box_size = np.array([1000] * 2 + [box_depth]) # stars will live here, they will respawn after death, can't escape!!
+    box_depth = max_visible_distance
+    box_size = np.array([5000] * 2 + [box_depth]) # stars will live here, they will respawn after death, can't escape!!
     log.info({"box_size": box_size})
-    base_speed = np.array([0, 0, -1]) * n_cycles * box_depth / total_time
+    base_speed = np.array([0, 0, -1]) * n_cycles * box_depth / total_time / n_replicates # can slow down by n_replicates times
+    base_speed_abs = np.linalg.norm(base_speed)
 
     stars = []
     log.info("generating stars.....")
     for i in tqdm(range(n_stars)):
         init_pos = np.random.uniform(-1., 1., size=[3]) * box_size
         init_pos[2] = abs(init_pos[2]) + proj_z
-        for i in range(one_over_n_cycles):
-            init_pos_shifted = init_pos[:]
-            init_pos_shifted[2] = init_pos_shifted[2] + box_depth / one_over_n_cycles
+        for i in range(n_replicates):
+            init_pos[2] = init_pos[2] + box_depth / n_replicates
             new_star = Star(
-                init_pos = init_pos_shifted,
+                init_pos = init_pos.copy(),
                 speed = base_speed,
                 respawn_z = box_depth,
             )
@@ -91,25 +91,29 @@ def space_travel():
             cur_pos = star.cur_pos(t)
             if cur_pos[2] > max_visible_distance:
                 continue
-                #stars.pop(star_idx) # stars that's gone behind the screen will be removed
             xp, yp = star.proj(t, proj_z) # projected location on canvas
             x_canvas = xc + xp
             y_canvas = yc + yp
             if not (0 <= x_canvas and x_canvas < output_h and 0 <= y_canvas and y_canvas < output_w):
-                #log.info(f"star out of scope: {(xp, yp)}, {(x_canvas, y_canvas)}")
-                pass
-            else:
-                dist_to_viewer = np.linalg.norm(cur_pos)
-                lightness = max(0.0, -dist_to_viewer+max_visible_distance) / max_visible_distance
-                #lightness = max(0.0, -cur_pos[2]+max_visible_distance) / max_visible_distance
+                continue
+            dist_to_viewer = np.linalg.norm(cur_pos*np.array([0.4, 0.4, 1.0]))
+            lightness = min( 1 / (dist_to_viewer / 100), 1.0)
+            lag = 0.15
+            n_steps = 100# int(lag*base_speed_abs)
+            dts = np.linspace(0, lag, n_steps)
+            for xp, yp in set([tuple(star.proj(t + dt, proj_z)) for dt in dts]):
+                #if dist_to_viewer < 100:
+                    #print(star_idx, star.cur_pos(t), star.cur_pos(t+dt), xp, yp, n_steps, dts)
+                x_canvas = xc + xp
+                y_canvas = yc + yp
+                if not (0 <= x_canvas and x_canvas < output_h and 0 <= y_canvas and y_canvas < output_w):
+                    break
                 new_arr[x_canvas, y_canvas, :] = (frm.WHITE * lightness).astype(int)
         output_arrs.append(new_arr)
 
     output_frames = []
     log.info("post processing frames.....")
     for i, arr in tqdm(enumerate(output_arrs)):
-        #if i / len(output_arrs) <= warmup_time / total_time: # not including warmup period
-            #continue
         frame = io.np_to_im(arr, "RGB")
         output_frames.append(frame.quantize(kmeans=3))#dither=Image.NONE)
         enhancer = ImageEnhance.Contrast(frame)
