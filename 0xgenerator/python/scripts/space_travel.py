@@ -1,3 +1,4 @@
+from mimetypes import init
 import pandas as pd
 from glob import glob
 import sys, os
@@ -44,19 +45,20 @@ class Star:
         return int(x / z * proj_z), int(y / z * proj_z)
 
 
-output_dir = Path("/Users/zche/cloud/data/0xgenerator/space_travel/outputs/") 
+output_dir = Path("/Users/zche/data/0xgenerator/space_travel/outputs/") 
 
 def space_travel():
 
-    n_stars = 10000
+    n_stars = 1000
     proj_z = 10
 
     n_frames = 100
-    n_cycles = 1
+    one_over_n_cycles = 3
+    n_cycles = 1 / one_over_n_cycles
     total_time = 10 # seconds
-    output_size = np.array([100]*2)
-    max_visible_distance = 300
-    box_depth = 300
+    output_size = np.array([600]*2)
+    max_visible_distance = 600
+    box_depth = max_visible_distance * 2
     box_size = np.array([1000] * 2 + [box_depth]) # stars will live here, they will respawn after death, can't escape!!
     log.info({"box_size": box_size})
     base_speed = np.array([0, 0, -1]) * n_cycles * box_depth / total_time
@@ -66,12 +68,15 @@ def space_travel():
     for i in tqdm(range(n_stars)):
         init_pos = np.random.uniform(-1., 1., size=[3]) * box_size
         init_pos[2] = abs(init_pos[2]) + proj_z
-        new_star = Star(
-            init_pos = init_pos,
-            speed = base_speed,
-            respawn_z = box_depth,
-        )
-        stars.append(new_star)
+        for i in range(one_over_n_cycles):
+            init_pos_shifted = init_pos[:]
+            init_pos_shifted[2] = init_pos_shifted[2] + box_depth / one_over_n_cycles
+            new_star = Star(
+                init_pos = init_pos_shifted,
+                speed = base_speed,
+                respawn_z = box_depth,
+            )
+            stars.append(new_star)
 
 
     output_arrs = []
