@@ -1,3 +1,4 @@
+from mimetypes import init
 import pandas as pd
 from glob import glob
 import sys, os
@@ -44,7 +45,7 @@ class Star:
         return int(x / z * proj_z), int(y / z * proj_z)
 
 
-output_dir = Path("/Users/zche/cloud/data/0xgenerator/space_travel/outputs/") 
+output_dir = Path("/Users/zche/data/0xgenerator/space_travel/outputs/") 
 
 def space_travel():
 
