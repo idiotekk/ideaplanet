@@ -1,3 +1,4 @@
+from pickletools import optimize
 from py0xlab import *
 import numpy as np
 
@@ -67,7 +68,7 @@ def read_gif(path, *, samples, size, rescale=1.0, to_np=True, to_rgb=True):
     return frames
 
     
-def read_frame(path, *, to_np=True, to_rgb=True, size=None):
+def read_frame(path, *, to_np=True, mode=None, to_rgb=True, size=None):
     """ Read a single frame from file (jpeg, png, etc.).
     """
     frame = Image.open(str(path))
@@ -75,6 +76,8 @@ def read_frame(path, *, to_np=True, to_rgb=True, size=None):
         frame = frame.resize(size)
     if to_rgb is True:
         frame = frame.convert("RGB")
+    if mode is not None:
+        frame = frame.convert(mode)
     if to_np is True:
         frame = np.array(frame)
     return frame
