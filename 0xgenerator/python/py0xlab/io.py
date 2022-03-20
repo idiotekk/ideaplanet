@@ -32,7 +32,7 @@ def compile_gif(frames, *, output_file, total_time):
     log.info(output_file)
 
 
-def read_gif(path, *, samples, size, rescale=1.0, to_np=True, to_rgb=True):
+def read_gif(path, *, samples, size=None, square=True, rescale=1.0, to_np=True, mode="RGB"):
     """ Read gif as a list of frames.
     """
     
@@ -41,18 +41,20 @@ def read_gif(path, *, samples, size, rescale=1.0, to_np=True, to_rgb=True):
     log.info(f"total number of frames = {n_frames}")
 
     #for i in tqdm(range(n_frames)):
-    x_0, y_0 = gif_image.size[0] // 2, gif_image.size[1] // 2
-    tmp = int((min(x_0, y_0) - 1) * rescale)
-    crop_limits = (x_0 - tmp, y_0 - tmp, x_0 + tmp, y_0 + tmp)
-    log.info(f"cropped at: {crop_limits}")
+    if square is True:
+        x_0, y_0 = gif_image.size[0] // 2, gif_image.size[1] // 2
+        tmp = int((min(x_0, y_0) - 1) * rescale)
+        crop_limits = (x_0 - tmp, y_0 - tmp, x_0 + tmp, y_0 + tmp)
+        log.info(f"going to sqaure crop at: {crop_limits}")
     
     frames = []
     for i in range(n_frames):
         gif_image.seek(i)
-        frame = frame.crop(crop_limits)
-        frame = frame.resize(size, Image.ANTIALIAS)
-        if to_rgb is True:
-            frame = gif_image.convert("RGB")
+        frame = gif_image.convert(mode)
+        if square is True:
+            frame = frame.crop(crop_limits)
+        if size is not None:
+            frame = frame.resize(size, Image.ANTIALIAS)
         if to_np is True:
             frame = np.array(frame)
         frames.append(frame)
