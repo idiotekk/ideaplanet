@@ -34,7 +34,8 @@ def old_film(file_name):
 
     #base_arr = np.array(io.read_frame(input_dir / file_name, size=(300, 300), to_np=False).convert("L").convert("RGB"))
     base_frame = io.read_frame(input_dir / file_name, to_np=False).convert("L").convert("RGB")
-    base_frame = base_frame.resize((600, 220))
+    base_frame = base_frame.resize((200, 200))
+    base_frame = base_frame.resize((600, 600))
     base_arr = np.array(base_frame)
     #base_arr = np.array(io.read_frame(input_dir / file_name, size=(300, 300), to_np=False))
     input_h, input_w = base_arr.shape[:2]
@@ -112,7 +113,10 @@ def old_film(file_name):
         shift_x = 0# np.random.randint(0, input_h)
         shift_y = np.random.randint(0, input_w)
         new_texture_lightness = np.roll(texture_lightness, (shift_x, shift_y), axis=(0, 1))
-        new_arr = base_arr * new_texture_lightness
+        shift_x = np.random.randint(-1, 1)
+        shift_y = np.random.randint(-1, 1)
+        new_arr = np.roll(base_arr, (shift_x, shift_y), axis=(0, 1))
+        new_arr = new_arr * new_texture_lightness
         new_arr = new_arr * edge_darkener
         output_arrs.append(new_arr)
 
@@ -130,7 +134,6 @@ def old_film(file_name):
         output_file=output_file,
         total_time=5.0,
     )
-
 
 
 parser = ArgumentParser()
