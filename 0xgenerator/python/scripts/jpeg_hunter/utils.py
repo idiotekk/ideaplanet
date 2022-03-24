@@ -31,30 +31,37 @@ base_url_map = {
     "azuki": "https://opensea.io/assets/0xed5af388653567af2f388e6224dc7c4b3241c544/",
     "0xzuki": "https://opensea.io/assets/0x2eb6be120ef111553f768fcd509b6368e82d1661/",
 }
+
+def get_chrome_options():
+
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    #chrome_options.add_argument("--window-size=1920,1080")
+    user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36'    
+    chrome_options.add_argument('user-agent={0}'.format(user_agent))
+    return chrome_options
+
+def download_img(url=None, out_file=None):
+    """ This function downloads an audio file from a url to a file. """
+    file_ = requests.get(url)
+    pathlib.Path(out_file).parent.mkdir(parents=True, exist_ok=True)
+    log.info(f"downloading {url} to {out_file}")
+    with open(str(out_file), "wb") as f:
+        f.write(file_.content)
+
         
+class Timer():
+    
+    def __init__(self, name):
+        self.name = name
 
-if __name__ == "__main__":
+    def __enter__(self):
+        self.start = datetime.datetime.now()
+        return self
 
-    parser = ArgumentParser()
-    parser.add_argument("--slug", default="azuki")
-    parser.add_argument("--start", "-s", type=0)
-    parser.add_argument("--end", "-e", type=10)
-    args = parser.parse_args()
-    slug = args.slug
-    output_dir = pathlib.Path("/Users/zche/data/0xgenerator/database/") / slug
-    root_url = pathlib.Path(base_url_map[slug])
-    log.info(f"downloading {slug} {args.start} to {args.end-1}")
-    with webdriver.Chrome(options=chrome_options) as driver: # open a browser 
-        for num in range(args.start, args.end):
-            try:
-                with Timer(f"{slug} {num}"):
-                    url = f"{root_url}/{num}"
-                    log.info(f"opening {url}")
-                    driver.get(url)
-                    with Timer(f"loading image of {slug} {num}"):
-                        elem = WebDriverWait(driver, 10).until(
-                            EC.presence_of_element_located((By.CLASS_NAME, "Property--type")))
-                        print(elem.text)
-            except Exception as e:
-                log.warning(f"noooo!!! failed getting {slug} {num}")
-                log.warning(f"error: {e}")
+    def __exit__(self, type, value, traceback):
+        self.end = datetime.datetime.now()
+        self.delta_t = self.end - self.start
+        self.delta_ms = self.delta_t.total_seconds() * 1000
+        log.info(f"timer : {self.name}, time elapsed (ms): {self.delta_ms}")
+        
