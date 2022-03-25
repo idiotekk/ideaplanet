@@ -72,6 +72,9 @@ if __name__ == "__main__":
     log.info(f"downloading {slug} {args.start} to {args.end-1}")
     with webdriver.Chrome(options=chrome_options) as driver: # open a browser 
         for num in range(args.start, args.end):
+            if os.path.exists(str(output_dir / f"{num}.png")):
+                log.info(f"{num} exists; continuing ... ")
+                continue
             try:
                 with Timer(f"{slug} {num}"):
                     url = f"{root_url}/{num}"
