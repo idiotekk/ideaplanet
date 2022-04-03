@@ -59,7 +59,7 @@ class Vertex:
         self._a = a
         self._v += self._a * dt
         self._p += self._v * dt
-        self._p = self._p % 1
+        self._p = self._p % 1 # circulate
 
     def absp(self, shape): 
         # convert from rel_pos to abs_pos (integer!!!)
@@ -86,16 +86,11 @@ class Edge:
 
     @property
     def length(self):
-        return np.sqrt(
-            (
-                self._s.p - self._e.p
-            ) ** 2
-        )
+        return dist(self._s, self._e)
         
-
     def render(self, canvas):
         shape = canvas.shape
-        color = (255 ,255, 255)
+        color = (255 ,255, 255) * self.length
         return cv2.line(canvas, 
                         self._p.absp(shape),
                         self._q.absp(shape),
@@ -107,6 +102,11 @@ class Edge:
         return 2
 
         
+def dist(a: Vertex, b: Vertex):
+    return np.sqrt((a.p - b.p) ** 2)
+
+
+        
 class Pool:
     
     _vertices = []
@@ -114,27 +114,6 @@ class Pool:
 
     def __init__(self) -> None:
         return
-    
-    def calc_force(self, idx):
-        # calculate the force on the `idx`-th vertex
-        pos_matrix = self.pos_matrix
-
-        shifted_pos_matrices = []
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                shifted_pos_matrices.append(pos_matrix + np.array([[i], [j]]))
-        v = self._vertices[idx]
-        augmented_pos_matrix = np.concatenate(shifted_pos_matrices, axis=1)
-        rel_pos = augmented_pos_matrix - v.p.reshape((2, -1))
-        distances = np.sqrt(np.sum( rel_pos ** 2, axis=0, keepdims=True))
-        mulitplier = -1 / distances
-        mulitplier = np.where(np.logical_and(
-            distances > 0, 
-            distances < 0.1),
-            mulitplier, 0)
-        forces = rel_pos * mulitplier
-        total_force = np.sum(forces, axis=1)
-        return total_force
 
     def update(self):
         self._pos_matrix = np.stack([v.p for v in self._vertices], axis=1)
@@ -162,7 +141,7 @@ def speed_generator(scalar=1.0):
 
 def gen_graph():
 
-    n_vertices = 500
+    n_vertices = 20
     pool = Pool()
 
     for _ in tqdm(range(n_vertices)):
@@ -172,6 +151,11 @@ def gen_graph():
         new_vertex = Vertex(p=(x, y), v=v, t=0)
         pool.add_vertex(new_vertex)
 
+    edges = []
+    for i, vi in enumerate(pool._vertices):
+        for j, vj in enumerate(pool._vertices):
+            edges.append(Edge(vi, vj))
+
     out_shape = (300, 300)
     out_h, out_w = out_shape
 
@@ -179,14 +163,17 @@ def gen_graph():
     output_arrs = []
 
     log.info("generating frames.....")
-    for i in tqdm(range(n_frames)):
+    for _ in tqdm(range(n_frames)):
         new_arr = np.zeros((out_h, out_w, 3), np.uint8)
         dt  = 1 / n_frames
         pool.update()
-        for j, v in enumerate(pool._vertices):
+        for i, v in enumerate(pool._vertices):
             a = pool.calc_force(j)
             v.update(dt, a=a)
             new_arr = v.render(new_arr)
+        for k, e in enumerate(edges):
+            if e.length < 0.3:
+                e.render(new_arr)
         output_arrs.append(new_arr)
 
     output_frames = []

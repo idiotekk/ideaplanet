@@ -32,13 +32,13 @@ class Vertex:
     _t: float # current t
     _a: np.ndarray # accecelration ( delta speed )
     _edges: list = []
+    _color = (255, 255, 255)
 
     def __init__(self, *, p, v, t=0):
         assert len(p) == 2 and len(v) == 2, "p and v must be 2-d"
         self._p = np.array(p)
         self._v = np.array(v)
         self._t = t
-        self._color = [np.random.randint(100, 200) for _ in range(3)]
 
     @property
     def x(self):
@@ -56,10 +56,15 @@ class Vertex:
         """ Move to new position.
         """
         self._t += dt
+        # flip speed if this vertex goes out of range
+        if self.x <= 0 or self.x >= 1: # turn around
+            self._v *= np.array([-1, 1])
+        if self.y <= 0 or self.y >= 1: # turn around
+            self._v *= np.array([1, -1])
+        # update speed
         self._a = a
         self._v += self._a * dt
         self._p += self._v * dt
-        self._p = self._p % 1
 
     def absp(self, shape): 
         # convert from rel_pos to abs_pos (integer!!!)
@@ -69,29 +74,16 @@ class Vertex:
     def render(self, canvas):
         h, w, *_ = canvas.shape
         absp = self.absp(canvas.shape)
-        r = int(0.01 * min(h, w))
-        return cv2.circle(canvas, absp, r, self._color, r*2)
+        r = int(0.02 * min(h, w))
+        return cv2.circle(canvas, absp, r, self._color, r // 3)
         
 
 class Edge:
     
-    _s: Vertex # starting
-    _e: Vertex # ending
+    _p: Vertex # starting
+    _q: Vertex # ending
     _t: float # spawn time
     _thick: float
-
-    def __init__(self, s, e, t=0) -> None:
-        self._s = s
-        self._s = e
-
-    @property
-    def length(self):
-        return np.sqrt(
-            (
-                self._s.p - self._e.p
-            ) ** 2
-        )
-        
 
     def render(self, canvas):
         shape = canvas.shape
@@ -115,23 +107,26 @@ class Pool:
     def __init__(self) -> None:
         return
     
-    def calc_force(self, idx):
+    def calc_force(self, idx, boundary_repel_factor=1.0):
         # calculate the force on the `idx`-th vertex
         pos_matrix = self.pos_matrix
-
-        shifted_pos_matrices = []
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                shifted_pos_matrices.append(pos_matrix + np.array([[i], [j]]))
         v = self._vertices[idx]
-        augmented_pos_matrix = np.concatenate(shifted_pos_matrices, axis=1)
-        rel_pos = augmented_pos_matrix - v.p.reshape((2, -1))
+        rel_pos_to_vertices = pos_matrix - v.p.reshape((2, -1))
+        boundary_offset = 0.05
+        rel_pos_to_boundary = np.array([
+            [v.x, 0],
+            [1 - v.x, 0],
+            [0, v.y],
+            [0, 1 - v.y],
+        ]).T
+        rel_pos_to_boundary = np.maximum(rel_pos_to_boundary + boundary_offset, 0.0)
+        rel_pos = np.concatenate([
+            rel_pos_to_vertices,
+            rel_pos_to_boundary
+            ], axis=1) / boundary_repel_factor
         distances = np.sqrt(np.sum( rel_pos ** 2, axis=0, keepdims=True))
         mulitplier = -1 / distances
-        mulitplier = np.where(np.logical_and(
-            distances > 0, 
-            distances < 0.1),
-            mulitplier, 0)
+        mulitplier = np.where(distances > 0, mulitplier, 0)
         forces = rel_pos * mulitplier
         total_force = np.sum(forces, axis=1)
         return total_force
@@ -162,13 +157,13 @@ def speed_generator(scalar=1.0):
 
 def gen_graph():
 
-    n_vertices = 500
+    n_vertices = 100
     pool = Pool()
 
     for _ in tqdm(range(n_vertices)):
         x = np.random.rand()
         y = np.random.rand()
-        v = speed_generator(scalar=0.2)
+        v = speed_generator(scalar=0.1)
         new_vertex = Vertex(p=(x, y), v=v, t=0)
         pool.add_vertex(new_vertex)
 
@@ -179,12 +174,12 @@ def gen_graph():
     output_arrs = []
 
     log.info("generating frames.....")
-    for i in tqdm(range(n_frames)):
-        new_arr = np.zeros((out_h, out_w, 3), np.uint8)
+    for _ in tqdm(range(n_frames)):
         dt  = 1 / n_frames
+        new_arr = np.zeros((out_h, out_w, 3), np.uint8)
         pool.update()
         for j, v in enumerate(pool._vertices):
-            a = pool.calc_force(j)
+            a = pool.calc_force(j, boundary_repel_factor=5.0)
             v.update(dt, a=a)
             new_arr = v.render(new_arr)
         output_arrs.append(new_arr)
@@ -197,27 +192,13 @@ def gen_graph():
         #enhancer = ImageEnhance.Contrast(frame)
         #texture_im = enhancer.enhance(0.2)
 
-    output_frames = output_frames[(n_frames//2):]
-    output_frames = output_frames + output_frames[::-1]
-
     output_file = out_dir / f"graph.gif"
     io.compile_gif(
         output_frames,
         output_file=output_file,
-        total_time=3.0,
+        total_time=5.0,
     )
 
-    return
-    videodims = (100,100)
-    fourcc = cv2.VideoWriter_fourcc(*'avc1')    
-    video = cv2.VideoWriter(str("graph.mp4"),fourcc, 60,videodims)
-    img = Image.new('RGB', videodims, color = 'darkred')
-    #draw stuff that goes on every frame here
-    for i in range(0,60*60):
-        imtemp = img.copy()
-        # draw frame specific stuff here.
-        video.write(cv2.cvtColor(np.array(imtemp), cv2.COLOR_RGB2BGR))
-    video.release()
 
 parser = ArgumentParser()
 #parser.add_argument("file_name", type=str)
